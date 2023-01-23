@@ -1,3 +1,5 @@
+import { diffNodes, noop } from '../utils/utils'
+
 export type Attrs = Record<string, string>
 export type Events = Record<string, <E extends Event>(e: E) => void>
 
@@ -68,6 +70,42 @@ export function diffEvents(node: Element, current: Events, target: Events) {
 
 export function setChildren(node: Element, currentChildren: INode[], newChildren: INode[]) {
     let discard: INode[] = []
+    diffNodes<INode, INode>({
+        areSameNodes,
+        createNode(newNode) {
+            newNode<void>({
+                text(_, txt) {
+                    node.appendChild(txt)
+                },
+                element(_, __, el) {
+                    node.appendChild(el)
+                },
+            })
+        },
+        updateeNode: noop,
+        moveNode(currentNode) {
+            currentNode<void>({
+                text(_, txt) {
+                    node.removeChild(txt)
+                    node.appendChild(txt)
+                },
+                element(_, __, el) {
+                    node.removeChild(el)
+                    node.appendChild(el)
+                },
+            })
+        },
+        removeNode(currentNode) {
+            currentNode<void>({
+                text(_, txt) {
+                    node.removeChild(txt)
+                },
+                element(_, __, el) {
+                    node.removeChild(el)
+                },
+            })
+        },
+    }, currentChildren, newChildren)
     for (const item of currentChildren) {
         if (newChildren.length == 0) {
             discard = [...discard, item]

@@ -1,4 +1,4 @@
-import { noop } from '../utils/utils'
+import { noop, diffNodes } from '../utils/utils'
 import { setChildren, diffAttrs, diffEvents, Attrs, Events, INode, text, element } from './manipulation'
 import type { Render, Component, Accessor, MiddlewareContext, Block } from '../utils/types'
 
@@ -146,30 +146,26 @@ export function render(
             let currentBlocks: BlockInstance<any>[] = []
             return {
                 render() {
-                    let newBlocks = blocks(), discard: BlockInstance<any>[] = [], completed: BlockInstance<any>[] = []
-                    for (const block of currentBlocks) {
-                        if (newBlocks.length == 0) {
-                            discard = [...discard, block]
-                            break
-                        } else if (id(newBlocks[0]) != block.id) {
-                            discard = [...discard, block]
-                        } else {
-                            block.context = newBlocks[0]((_, __, ctx) => ctx)
-                            completed = [...completed, block]
-                            newBlocks = newBlocks.slice(1)
-                        }
-                    }
-                    for (const block of newBlocks) {
-                        if (discard.some(discarded => discarded.id == id(block))) {
-                            const idx = discard.findIndex(discarded => discarded.id == id(block))
-                            completed = [...completed, discard[idx]]
-                            discard = discard.filter((_, i) => i != idx)
-                        } else {
-                            const i = block<BlockInstance<any>>((id, template, context) => new BlockInstance(id, template, context))
+                    let newBlocks = blocks(), completed: BlockInstance<any>[] = []
+                    diffNodes<BlockInstance<any>, Block>({
+                        areSameNodes(currentNode, newNode) {
+                            return currentNode.id == id(newNode)
+                        },
+                        createNode(newNode) {
+                            const i = newNode<BlockInstance<any>>((id, template, context) => new BlockInstance(id, template, context))
                             completed = [...completed, i]
-                        }
-                    }
-                    discard.forEach(d => d.render.unmount())
+                        },
+                        updateeNode(currentNode, newNode) {
+                            currentNode.context = newNode((_, __, ctx) => ctx)
+                            completed = [...completed, currentNode]
+                        },
+                        moveNode(currentNode) {
+                            completed = [...completed, currentNode]
+                        },
+                        removeNode(currentNode) {
+                            currentNode.render.unmount()
+                        },
+                    }, currentBlocks, newBlocks)
                     currentBlocks = completed
                     return currentBlocks.reduce((children, c) => [...children, ...c.render.render()], [] as INode[])
                 },
