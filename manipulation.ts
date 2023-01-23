@@ -106,46 +106,4 @@ export function setChildren(node: Element, currentChildren: INode[], newChildren
             })
         },
     }, currentChildren, newChildren)
-    for (const item of currentChildren) {
-        if (newChildren.length == 0) {
-            discard = [...discard, item]
-        } else if (!areSameNodes(item, newChildren[0])) {
-            discard = [...discard, item]
-        } else {
-            newChildren = newChildren.slice(1)
-        }
-    }
-    for (const item of newChildren) {
-        if (discard.some(discarded => areSameNodes(discarded, item))) {
-            const idx = discard.findIndex(discarded => areSameNodes(discarded, item))
-            discard[idx]<void>({
-                text(_, txt) {
-                    node.removeChild(txt)
-                    node.appendChild(txt)
-                },
-                element(_, __, el) {
-                    node.removeChild(el)
-                    node.appendChild(el)
-                },
-            })
-            discard = discard.filter((_, i) => i != idx)
-        } else {
-            item<void>({
-                text(_, txt) {
-                    node.appendChild(txt)
-                },
-                element(_, __, el) {
-                    node.appendChild(el)
-                },
-            })
-        }
-    }
-    discard.forEach(discarded => discarded<void>({
-        text(_, txt) {
-            node.removeChild(txt)
-        },
-        element(_, __, el) {
-            node.removeChild(el)
-        },
-    }))
 }
