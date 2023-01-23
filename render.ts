@@ -146,7 +146,7 @@ export function render(
             let currentBlocks: BlockInstance<any>[] = []
             return {
                 render() {
-                    let newBlocks = blocks(), completed: BlockInstance<any>[] = []
+                    let completed: BlockInstance<any>[] = []
                     diffNodes<BlockInstance<any>, Block>({
                         areSameNodes(currentNode, newNode) {
                             return currentNode.id == id(newNode)
@@ -165,7 +165,7 @@ export function render(
                         removeNode(currentNode) {
                             currentNode.render.unmount()
                         },
-                    }, currentBlocks, newBlocks)
+                    }, currentBlocks, blocks())
                     currentBlocks = completed
                     return currentBlocks.reduce((children, c) => [...children, ...c.render.render()], [] as INode[])
                 },
